@@ -38,6 +38,13 @@ const (
 	InstructionFreezeDelegatedAccount
 	InstructionThawDelegatedAccount
 	InstructionRemoveCreatorVerification
+	InstructionBurnANFT
+	Instruction_
+	InstructionUnverifySizedCollectionItem
+	InstructionSetAndVerifySizedCollectionItem
+	InstructionCreateMetadataAccountV3
+	InstructionSetCollectionSize
+	InstructionSetTokenStandard
 )
 
 type CreateMetadataAccountParam struct {
@@ -561,6 +568,62 @@ func VerifyCollection(param VerifyCollectionParam) types.Instruction {
 	}
 }
 
+type UnverifyCollectionParam struct {
+	Metadata                       common.PublicKey
+	CollectionAuthority            common.PublicKey
+	CollectionMint                 common.PublicKey
+	Collection                     common.PublicKey
+	CollectionMasterEditionAccount common.PublicKey
+	CollectionAuthorityRecord      common.PublicKey
+}
+
+func UnverifyCollection(param UnverifyCollectionParam) types.Instruction {
+	data, err := borsh.Serialize(struct {
+		Instruction Instruction
+	}{
+		Instruction: InstructionUnverifyCollection,
+	})
+	if err != nil {
+		panic(err)
+	}
+	return types.Instruction{
+		ProgramID: common.MetaplexTokenMetaProgramID,
+		Accounts: []types.AccountMeta{
+			{
+				PubKey:     param.Metadata,
+				IsSigner:   false,
+				IsWritable: true,
+			},
+			{
+				PubKey:     param.CollectionAuthority,
+				IsSigner:   true,
+				IsWritable: true,
+			},
+			{
+				PubKey:     param.CollectionMint,
+				IsSigner:   false,
+				IsWritable: false,
+			},
+			{
+				PubKey:     param.Collection,
+				IsSigner:   false,
+				IsWritable: false,
+			},
+			{
+				PubKey:     param.CollectionMasterEditionAccount,
+				IsSigner:   false,
+				IsWritable: false,
+			},
+			{
+				PubKey:     param.CollectionAuthorityRecord,
+				IsSigner:   false,
+				IsWritable: false,
+			},
+		},
+		Data: data,
+	}
+}
+
 type SetAndVerifyCollectionParam struct {
 	Payer                          common.PublicKey
 	Metadata                       common.PublicKey
@@ -635,5 +698,68 @@ func SetAndVerifyCollection(param SetAndVerifyCollectionParam) types.Instruction
 		})
 	}
 
+	return ix
+}
+
+type BurnANFTParam struct {
+	Metadata             common.PublicKey
+	Owner                common.PublicKey
+	Mint                 common.PublicKey
+	TokenAccount         common.PublicKey
+	MasterEditionAccount common.PublicKey
+	SplTokenProgram      common.PublicKey
+	CollectionMetadata   common.PublicKey
+}
+
+func BurnANFT(param BurnANFTParam) types.Instruction {
+	data, err := borsh.Serialize(struct {
+		Instruction Instruction
+	}{
+		Instruction: InstructionBurnANFT,
+	})
+	if err != nil {
+		panic(err)
+	}
+	ix := types.Instruction{
+		ProgramID: common.MetaplexTokenMetaProgramID,
+		Accounts: []types.AccountMeta{
+			{
+				PubKey:     param.Metadata,
+				IsSigner:   false,
+				IsWritable: true,
+			},
+			{
+				PubKey:     param.Owner,
+				IsSigner:   true,
+				IsWritable: true,
+			},
+			{
+				PubKey:     param.Mint,
+				IsSigner:   false,
+				IsWritable: true,
+			},
+			{
+				PubKey:     param.TokenAccount,
+				IsSigner:   false,
+				IsWritable: true,
+			},
+			{
+				PubKey:     param.MasterEditionAccount,
+				IsSigner:   false,
+				IsWritable: true,
+			},
+			{
+				PubKey:     param.SplTokenProgram,
+				IsSigner:   false,
+				IsWritable: false,
+			},
+			{
+				PubKey:     param.CollectionMetadata,
+				IsSigner:   false,
+				IsWritable: true,
+			},
+		},
+		Data: data,
+	}
 	return ix
 }
