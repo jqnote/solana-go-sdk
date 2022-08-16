@@ -6,7 +6,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
+	"net/http/httputil"
 )
 
 const (
@@ -46,6 +48,7 @@ type GeneralResponse struct {
 type RpcClient struct {
 	endpoint   string
 	httpClient *http.Client
+	debug      bool
 }
 
 func NewRpcClient(endpoint string) RpcClient { return New(WithEndpoint(endpoint)) }
@@ -63,6 +66,10 @@ func New(opts ...Option) RpcClient {
 	}
 
 	return *client
+}
+
+func (c *RpcClient) SetDebug(debug bool) {
+	c.debug = debug
 }
 
 // Call will return body of response. if http code beyond 200~300, the error also returns.
@@ -83,6 +90,16 @@ func (c *RpcClient) Call(ctx context.Context, params ...interface{}) ([]byte, er
 	// do request
 	res, err := c.httpClient.Do(req)
 	if err != nil {
+		if c.debug {
+			{
+				content, _ := httputil.DumpRequest(req, true)
+				log.Println("request", string(content))
+			}
+			{
+				content, _ := httputil.DumpResponse(res, true)
+				log.Println("response", string(content))
+			}
+		}
 		return nil, fmt.Errorf("failed to do request, err: %v", err)
 	}
 	defer res.Body.Close()
@@ -90,11 +107,31 @@ func (c *RpcClient) Call(ctx context.Context, params ...interface{}) ([]byte, er
 	// parse body
 	body, err := ioutil.ReadAll(res.Body)
 	if err != nil {
+		if c.debug {
+			{
+				content, _ := httputil.DumpRequest(req, true)
+				log.Println("request", string(content))
+			}
+			{
+				content, _ := httputil.DumpResponse(res, true)
+				log.Println("response", string(content))
+			}
+		}
 		return nil, fmt.Errorf("failed to read body, err: %v", err)
 	}
 
 	// check response code
 	if res.StatusCode < 200 || res.StatusCode > 300 {
+		if c.debug {
+			{
+				content, _ := httputil.DumpRequest(req, true)
+				log.Println("request", string(content))
+			}
+			{
+				content, _ := httputil.DumpResponse(res, true)
+				log.Println("response", string(content))
+			}
+		}
 		return body, fmt.Errorf("get status code: %v", res.StatusCode)
 	}
 
